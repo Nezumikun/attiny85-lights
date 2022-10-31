@@ -11,8 +11,14 @@ CRGB leds[NUM_LEDS];
 
 #define BRIGHTNESS          255
 #define FRAMES_PER_SECOND  60
+#define GREENLED_PIN 4
+bool demoMode = true;
+
+#define BUTTON_PIN 0
 
 void setup() {
+  pinMode(BUTTON_PIN, INPUT);
+  pinMode(GREENLED_PIN, OUTPUT);
   delay(500); // delay for recovery
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
@@ -84,12 +90,40 @@ SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-void nextPattern()
+void nextPattern(bool autoChange)
 {
   // add one to the current pattern number, and wrap around at the end
   gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
 }
-  
+
+void checkButtonPush() {
+  static bool hold = false;
+  static bool buttonState = false;
+  static uint32_t buttonTimer = 0;
+  bool temp = digitalRead(BUTTON_PIN);
+  uint32_t now = millis();
+  uint32_t delta = now - buttonTimer;
+  if (temp && !buttonState && delta > 100) {
+    buttonState = true;
+    buttonTimer = now;
+    hold = false;
+  }
+  else if (temp && buttonState && delta > 1000) {
+    demoMode = true;
+    gCurrentPatternNumber = 0;
+    hold = true;
+  }
+  else if (!temp && buttonState && delta > 100) {
+    buttonState = false;
+    buttonTimer = now;
+    if (!hold) {
+      demoMode = false;
+      nextPattern(false);
+    }
+    hold = false;
+  }
+}
+
 void loop()
 {
   // Call the current pattern function once, updating the 'leds' array
@@ -102,5 +136,9 @@ void loop()
 
   // do some periodic updates
   EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-  EVERY_N_SECONDS( 20 ) { nextPattern(); } // change patterns periodically
+  if (demoMode) {
+    EVERY_N_SECONDS( 20 ) { nextPattern(true); } // change patterns periodically
+  }
+  checkButtonPush();
+  digitalWrite(GREENLED_PIN, demoMode ? HIGH : LOW);
 }
