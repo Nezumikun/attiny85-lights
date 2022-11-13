@@ -1,107 +1,45 @@
 #include <Arduino.h>
 #include <FastLED.h>
+#include "LedManager.v1.h"
 
 FASTLED_USING_NAMESPACE
 
+#ifdef BOARD_ATTINY85
 #define DATA_PIN    3
+#define NUM_LEDS    50
+#else
+#define DATA_PIN    13
+#define NUM_LEDS    30
+#endif
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
-#define NUM_LEDS    50
 CRGB leds[NUM_LEDS];
 
 #define BRIGHTNESS          255
-#define FRAMES_PER_SECOND  60
+#define FRAMES_PER_SECOND  50
 #define GREENLED_PIN 4
-bool demoMode = true;
 
 #define BUTTON_PIN 0
 
+Nezumikun::LedManager ledManager(&leds[0], NUM_LEDS, FRAMES_PER_SECOND);
+
 void setup() {
+#ifdef BOARD_ARDUINO_NANO
+  Serial.begin(115200);
+#endif  
   pinMode(BUTTON_PIN, INPUT);
   pinMode(GREENLED_PIN, OUTPUT);
   delay(500); // delay for recovery
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
+  ledManager.begin();
 }
 
-uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
-uint8_t gHue = 0; // rotating "base color" used by many of the patterns
-
-void rainbow() 
-{
-  // FastLED's built-in rainbow generator
-  fill_rainbow( leds, NUM_LEDS, gHue, 7);
-}
-
-void addGlitter( fract8 chanceOfGlitter) 
-{
-  if( random8() < chanceOfGlitter) {
-    leds[ random16(NUM_LEDS) ] += CRGB::White;
-  }
-}
-
-void rainbowWithGlitter() 
-{
-  // built-in FastLED rainbow, plus some random sparkly glitter
-  rainbow();
-  addGlitter(80);
-}
-
-void confetti() 
-{
-  // random colored speckles that blink in and fade smoothly
-  fadeToBlackBy( leds, NUM_LEDS, 10);
-  int pos = random16(NUM_LEDS);
-  leds[pos] += CHSV( gHue + random8(64), 200, 255);
-}
-
-void sinelon()
-{
-  // a colored dot sweeping back and forth, with fading trails
-  fadeToBlackBy( leds, NUM_LEDS, 20);
-  int pos = beatsin16( 13, 0, NUM_LEDS-1 );
-  leds[pos] += CHSV( gHue, 255, 192);
-}
-
-void bpm()
-{
-  // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
-  uint8_t BeatsPerMinute = 62;
-  CRGBPalette16 palette = PartyColors_p;
-  uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
-  for( int i = 0; i < NUM_LEDS; i++) { //9948
-    leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
-  }
-}
-
-void juggle() {
-  // eight colored dots, weaving in and out of sync with each other
-  fadeToBlackBy( leds, NUM_LEDS, 20);
-  uint8_t dothue = 0;
-  for( int i = 0; i < 8; i++) {
-    leds[beatsin16( i+7, 0, NUM_LEDS-1 )] |= CHSV(dothue, 200, 255);
-    dothue += 32;
-  }
-}
-
-typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
-
-// List of patterns to cycle through.  Each is defined as a separate function below.
-#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
-
-void nextPattern(bool autoChange)
-{
-  // add one to the current pattern number, and wrap around at the end
-  gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
-}
-
-void checkButtonPush() {
+void checkButtonPush(unsigned long now) {
   static bool hold = false;
   static bool buttonState = false;
   static uint32_t buttonTimer = 0;
   bool temp = digitalRead(BUTTON_PIN);
-  uint32_t now = millis();
   uint32_t delta = now - buttonTimer;
   if (temp && !buttonState && delta > 100) {
     buttonState = true;
@@ -109,16 +47,15 @@ void checkButtonPush() {
     hold = false;
   }
   else if (temp && buttonState && delta > 1000) {
-    demoMode = true;
-    gCurrentPatternNumber = 0;
+    ledManager.setDemoMode(true);
     hold = true;
   }
   else if (!temp && buttonState && delta > 100) {
     buttonState = false;
     buttonTimer = now;
     if (!hold) {
-      demoMode = false;
-      nextPattern(false);
+      ledManager.setDemoMode(false);
+      ledManager.nextPattern(false);
     }
     hold = false;
   }
@@ -126,19 +63,8 @@ void checkButtonPush() {
 
 void loop()
 {
-  // Call the current pattern function once, updating the 'leds' array
-  gPatterns[gCurrentPatternNumber]();
-
-  // send the 'leds' array out to the actual LED strip
-  FastLED.show();  
-  // insert a delay to keep the framerate modest
-  FastLED.delay(1000/FRAMES_PER_SECOND); 
-
-  // do some periodic updates
-  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-  if (demoMode) {
-    EVERY_N_SECONDS( 20 ) { nextPattern(true); } // change patterns periodically
-  }
-  checkButtonPush();
-  digitalWrite(GREENLED_PIN, demoMode ? HIGH : LOW);
+  unsigned long now = millis();
+  checkButtonPush(now);
+  digitalWrite(GREENLED_PIN, ledManager.isDemoMode() ? HIGH : LOW);
+  ledManager.loop(now);
 }
