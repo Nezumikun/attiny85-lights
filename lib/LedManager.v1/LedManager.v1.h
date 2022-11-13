@@ -11,13 +11,12 @@ namespace Nezumikun {
     private:
       uint8_t ledsNumber;
       CRGB* leds;
-      uint8_t framesPerSecond;
+      uint8_t timeInterval;
       bool demoMode;
       unsigned long prevTime = 0;
       uint8_t currentPatternNumber = 0; // Index number of which pattern is current
       uint8_t hue = 0; // rotating "base color" used by many of the patterns
       void effectRainbow();
-      void toolsAddGlitter(fract8 chanceOfGlitter);
       void effectRainbowWithGlitter();
       void effectConfetti();
       void effectSinelon();

@@ -4,16 +4,16 @@ namespace Nezumikun {
   LedManager::LedManager(CRGB* leds, uint8_t ledsNumber, uint8_t framesPerSecond, bool demoMode) {
     this->leds = leds;
     this->ledsNumber = ledsNumber;
-    this->framesPerSecond = framesPerSecond;
+    this->timeInterval = 1000 / (uint16_t)framesPerSecond;
     this->demoMode = demoMode;
   }
 
   void LedManager::begin() {
-    this->prevTime -= 1000 / framesPerSecond;
+    this->prevTime -= this->timeInterval;
   }
 
   void LedManager::loop(unsigned long now) {
-    if (now - this->prevTime >= 1000/this->framesPerSecond) {
+    if (now - this->prevTime >= this->timeInterval) {
       // Call the current pattern function once, updating the 'leds' array
       switch(this->currentPatternNumber) {
         case 0: this->effectRainbow(); break;
@@ -50,16 +50,12 @@ namespace Nezumikun {
     fill_rainbow(this->leds, this->ledsNumber, this->hue, 7);
   }
 
-  void LedManager::toolsAddGlitter(fract8 chanceOfGlitter) {
-    if( random8() < chanceOfGlitter) {
-      this->leds[random16(this->ledsNumber)] += CRGB::White;
-    }
-  }
-
   void LedManager::effectRainbowWithGlitter() {
     // built-in FastLED rainbow, plus some random sparkly glitter
     this->effectRainbow();
-    this->toolsAddGlitter(80);
+    if( random8() < 80) {
+      this->leds[random16(this->ledsNumber)] += CRGB::White;
+    }
   }
 
   void LedManager::effectConfetti() {
