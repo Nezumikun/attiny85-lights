@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <FastLED.h>
+#include "LED.h"
 #include "LedManager.v1.h"
 
 FASTLED_USING_NAMESPACE
@@ -23,17 +24,19 @@ CRGB leds[NUM_LEDS];
 #define BUTTON_PIN 0
 
 Nezumikun::LedManager ledManager(&leds[0], NUM_LEDS, FRAMES_PER_SECOND);
+Nezumikun::LED ledGreen(GREENLED_PIN);
 
 void setup() {
 #ifdef BOARD_ARDUINO_NANO
   Serial.begin(115200);
-#endif  
+  randomSeed(analogRead(0));
+#endif
   pinMode(BUTTON_PIN, INPUT);
-  pinMode(GREENLED_PIN, OUTPUT);
   delay(500); // delay for recovery
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
   ledManager.begin();
+  ledGreen.on();
 }
 
 void checkButtonPush(unsigned long now) {
@@ -49,6 +52,7 @@ void checkButtonPush(unsigned long now) {
   }
   else if (temp && buttonState && delta > 1000) {
     ledManager.setDemoMode(true);
+    ledGreen.on();
     hold = true;
   }
   else if (!temp && buttonState && delta > 100) {
@@ -56,6 +60,7 @@ void checkButtonPush(unsigned long now) {
     buttonTimer = now;
     if (!hold) {
       ledManager.setDemoMode(false);
+      ledGreen.off();
       ledManager.nextPattern(false);
     }
     hold = false;
@@ -67,7 +72,7 @@ void loop()
   unsigned long now = millis();
   #ifndef BOARD_ARDUINO_NANO
   checkButtonPush(now);
-  digitalWrite(GREENLED_PIN, ledManager.isDemoMode() ? HIGH : LOW);
   #endif
+  ledGreen.touch(now);
   ledManager.loop(now);
 }

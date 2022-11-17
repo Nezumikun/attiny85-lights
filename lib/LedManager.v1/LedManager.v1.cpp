@@ -6,6 +6,9 @@ namespace Nezumikun {
     this->ledsNumber = ledsNumber;
     this->timeInterval = 1000 / (uint16_t)framesPerSecond;
     this->demoMode = demoMode;
+    this->x = random16();
+    this->y = random16();
+    this->z = random16();
   }
 
   void LedManager::begin() {
@@ -16,12 +19,17 @@ namespace Nezumikun {
     if (now - this->prevTime >= this->timeInterval) {
       // Call the current pattern function once, updating the 'leds' array
       switch(this->currentPatternNumber) {
+        #ifdef BOARD_ARDUINO_NANO
+        case 0: this->effectPerlinNoise(); break;
+        #else
         case 0: this->effectRainbow(); break;
+        #endif
         case 1: this->effectRainbowWithGlitter(); break;
         case 2: this->effectConfetti(); break;
         case 3: this->effectSinelon(); break;
         case 4: this->effectJuggle(); break;
         case 5: this->effectBpm(); break;
+        case 6: this->effectPerlinNoise(); break;
       }
 
       // send the 'leds' array out to the actual LED strip
@@ -92,9 +100,24 @@ namespace Nezumikun {
     }
   }
 
+  void LedManager::effectPerlinNoise() {
+    // eight colored dots, weaving in and out of sync with each other
+    for(uint8_t i = 0; i < this->ledsNumber; i++) {
+      leds[i] = CHSV(this->hue + inoise8(this->x + i * 50, this->y, this->z), 255, inoise8(this->y + i * 50, this->x, this->z));
+    }
+    this->x++;
+    this->y--;
+    this->z++;
+  }
+
+
   void LedManager::nextPattern(bool autoChange) {
-    // add one to the current pattern number, and wrap around at the end
+    #ifdef BOARD_ARDUINO_NANO
     this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+    return;
+    #else
+    this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+    #endif
   }
 
 }
