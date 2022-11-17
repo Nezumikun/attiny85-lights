@@ -26,10 +26,15 @@ CRGB leds[NUM_LEDS];
 Nezumikun::LedManager ledManager(&leds[0], NUM_LEDS, FRAMES_PER_SECOND);
 Nezumikun::LED ledGreen(GREENLED_PIN);
 
+void callbackAllModes() {
+  ledGreen.blink(500);
+}
+
 void setup() {
 #ifdef BOARD_ARDUINO_NANO
   Serial.begin(115200);
   randomSeed(analogRead(0));
+  Serial.println("Begin");
 #endif
   pinMode(BUTTON_PIN, INPUT);
   delay(500); // delay for recovery
@@ -37,6 +42,7 @@ void setup() {
   FastLED.setBrightness(BRIGHTNESS);
   ledManager.begin();
   ledGreen.on();
+  ledManager.setAllModesCallback(callbackAllModes);
 }
 
 void checkButtonPush(unsigned long now) {

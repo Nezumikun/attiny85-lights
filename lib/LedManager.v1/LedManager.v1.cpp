@@ -15,33 +15,6 @@ namespace Nezumikun {
     this->prevTime -= this->timeInterval;
   }
 
-  void LedManager::loop(unsigned long now) {
-    if (now - this->prevTime >= this->timeInterval) {
-      // Call the current pattern function once, updating the 'leds' array
-      switch(this->currentPatternNumber) {
-        #ifdef BOARD_ARDUINO_NANO
-        case 0: this->effectPerlinNoise(); break;
-        #else
-        case 0: this->effectRainbow(); break;
-        #endif
-        case 1: this->effectRainbowWithGlitter(); break;
-        case 2: this->effectConfetti(); break;
-        case 3: this->effectSinelon(); break;
-        case 4: this->effectJuggle(); break;
-        case 5: this->effectBpm(); break;
-        case 6: this->effectPerlinNoise(); break;
-      }
-
-      // send the 'leds' array out to the actual LED strip
-      FastLED.show();
-      this->prevTime = now;
-    }
-    EVERY_N_MILLISECONDS(20) { this->hue++; } // slowly cycle the "base color" through the rainbow
-    if (this->demoMode) {
-      EVERY_N_SECONDS(20) { this->nextPattern(true); } // change patterns periodically
-    }
-  }
-
   bool LedManager::isDemoMode() {
     return this->demoMode;
   }
@@ -50,6 +23,7 @@ namespace Nezumikun {
     this->demoMode = demoMode;
     if (demoMode) {
       this->currentPatternNumber = 0;
+      this->isShowAllModesInDemo = false;
     }
   }
 
@@ -112,12 +86,50 @@ namespace Nezumikun {
 
 
   void LedManager::nextPattern(bool autoChange) {
-    #ifdef BOARD_ARDUINO_NANO
-    this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
-    return;
-    #else
-    this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
-    #endif
+    if (this->demoMode) {
+      if (!this->isShowAllModesInDemo) {
+        this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+        if (this->currentPatternNumber == 0) {
+          this->isShowAllModesInDemo = true;
+          if (this->callbackAllModes != NULL) {
+            this->callbackAllModes();
+          }
+        }
+      } else {
+        if ((random8() & 1) == 1) {
+          this->currentPatternNumber = random8(NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER);
+        }
+      }
+    } else {
+      this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+    }
+  }
+
+  void LedManager::setAllModesCallback(ptrAllModesCallBack callback) {
+    this->callbackAllModes = callback;
+  }
+
+  void LedManager::loop(unsigned long now) {
+    if (now - this->prevTime >= this->timeInterval) {
+      // Call the current pattern function once, updating the 'leds' array
+      switch(this->currentPatternNumber) {
+        case 0: this->effectRainbow(); break;
+        case 1: this->effectRainbowWithGlitter(); break;
+        case 2: this->effectConfetti(); break;
+        case 3: this->effectSinelon(); break;
+        case 4: this->effectJuggle(); break;
+        case 5: this->effectBpm(); break;
+        case 6: this->effectPerlinNoise(); break;
+      }
+
+      // send the 'leds' array out to the actual LED strip
+      FastLED.show();
+      this->prevTime = now;
+    }
+    EVERY_N_MILLISECONDS(20) { this->hue++; } // slowly cycle the "base color" through the rainbow
+    if (this->demoMode) {
+      EVERY_N_SECONDS(20) { this->nextPattern(true); } // change patterns periodically
+    }
   }
 
 }

@@ -7,6 +7,7 @@
 #define NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER 7
 
 namespace Nezumikun {
+  typedef void (*ptrAllModesCallBack)();
   class LedManager {
     private:
       uint8_t ledsNumber;
@@ -26,6 +27,8 @@ namespace Nezumikun {
       void effectBpm();
       void effectJuggle();
       void effectPerlinNoise();
+      ptrAllModesCallBack callbackAllModes = NULL;
+      bool isShowAllModesInDemo = false;
     public:
       LedManager(CRGB* leds, uint8_t ledsNumber, uint8_t framesPerSecond, bool demoMode = true);
       void begin();
@@ -33,6 +36,7 @@ namespace Nezumikun {
       bool isDemoMode();
       void setDemoMode(bool demoMode);
       void nextPattern(bool autoChange);
+      void setAllModesCallback(ptrAllModesCallBack callback);
   };
 }
 
