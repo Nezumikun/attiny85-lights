@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <FastLED.h>
+#include "microLED.h"
 #include "LED.h"
 #include "LedManager.v1.h"
 
@@ -16,14 +17,14 @@ FASTLED_USING_NAMESPACE
 #endif
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
-CRGB leds[NUM_LEDS];
 
-#define FRAMES_PER_SECOND  50
+#define FRAMES_PER_SECOND  30
 #define GREENLED_PIN 4
 
 #define BUTTON_PIN 0
 
-Nezumikun::LedManager ledManager(&leds[0], NUM_LEDS, FRAMES_PER_SECOND);
+microLED<NUM_LEDS, DATA_PIN, MLED_NO_CLOCK, LED_WS2812, ORDER_GRB, CLI_HIGH> strip;
+Nezumikun::LedManager ledManager((ImicroLED *) &strip, NUM_LEDS, FRAMES_PER_SECOND);
 Nezumikun::LED ledGreen(GREENLED_PIN);
 
 void callbackAllModes() {
@@ -38,11 +39,9 @@ void setup() {
 #endif
   pinMode(BUTTON_PIN, INPUT);
   delay(500); // delay for recovery
-  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(BRIGHTNESS);
-  ledManager.begin();
   ledGreen.on();
   ledManager.setAllModesCallback(callbackAllModes);
+  ledManager.begin();
 }
 
 void checkButtonPush(unsigned long now) {

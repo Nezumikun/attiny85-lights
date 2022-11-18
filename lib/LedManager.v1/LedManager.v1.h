@@ -3,15 +3,16 @@
 
 #include "Arduino.h"
 #include "FastLED.h"
+#include "microLED.h"
 
-#define NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER 7
+#define NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER 2
 
 namespace Nezumikun {
   typedef void (*ptrAllModesCallBack)();
   class LedManager {
     private:
       uint8_t ledsNumber;
-      CRGB* leds;
+      ImicroLED* strip;
       uint8_t timeInterval;
       bool demoMode;
       unsigned long prevTime = 0;
@@ -20,6 +21,9 @@ namespace Nezumikun {
       uint16_t x = 0;
       uint16_t y = 0;
       uint16_t z = 0;
+      uint8_t currentIndex = 0;
+      bool forward = true;
+      uint8_t subMode = 0;
       void effectRainbow();
       void effectRainbowWithGlitter();
       void effectConfetti();
@@ -30,7 +34,7 @@ namespace Nezumikun {
       ptrAllModesCallBack callbackAllModes = NULL;
       bool isShowAllModesInDemo = false;
     public:
-      LedManager(CRGB* leds, uint8_t ledsNumber, uint8_t framesPerSecond, bool demoMode = true);
+      LedManager(ImicroLED* strip, uint8_t ledsNumber, uint8_t framesPerSecond, bool demoMode = true);
       void begin();
       void loop(unsigned long now);
       bool isDemoMode();
