@@ -8,7 +8,6 @@ namespace Nezumikun {
     this->demoMode = demoMode;
     this->x = random16();
     this->y = random16();
-    this->z = random16();
   }
 
   void LedManager::begin() {
@@ -29,15 +28,12 @@ namespace Nezumikun {
 
   void LedManager::effectRainbow() {
     // FastLED's built-in rainbow generator
-    fill_rainbow(this->leds, this->ledsNumber, this->hue, 7);
-  }
-
-  void LedManager::effectRainbowWithGlitter() {
-    // built-in FastLED rainbow, plus some random sparkly glitter
-    this->effectRainbow();
-    if( random8() < 80) {
+    fill_rainbow(this->leds, this->ledsNumber, this->hue + inoise8(this->x, this->y), 255 / this->ledsNumber);
+    if(((this->subMode & 1) == 1) && (random8() < 80)) {
       this->leds[random16(this->ledsNumber)] += CRGB::White;
     }
+    this->x++;
+    this->y++;
   }
 
   void LedManager::effectConfetti() {
@@ -74,18 +70,69 @@ namespace Nezumikun {
     }
   }
 
+  #ifdef BOARD_ATTINY85
+  #define NEZUMIKUN_LED_MANAGER_PALLETES_NUMBER 2
+  #else
+  #define NEZUMIKUN_LED_MANAGER_PALLETES_NUMBER 8
+  DEFINE_GRADIENT_PALETTE ( aurora_gp ) {
+    0,  17, 177,  13,    //Greenish
+    64, 121, 242,   5,    //Greenish
+    128,  25, 173, 121,    //Turquoise
+    192, 250,  77, 127,    //Pink
+    255, 171, 101, 221     //Purple
+  };
+  #endif
+  DEFINE_GRADIENT_PALETTE( xmas_gp ) {
+    0,   0, 12,  0,
+    40,   0, 55,  0,
+    66,   1, 117,  2,
+    77,   1, 84,  1,
+    81,   0, 55,  0,
+    119,   0, 12,  0,
+    153,  42,  0,  0,
+    181, 121,  0,  0,
+    204, 255, 12,  8,
+    224, 121,  0,  0,
+    244,  42,  0,  0,
+    255,  42,  0,  0
+  };
   void LedManager::effectPerlinNoise() {
-    // eight colored dots, weaving in and out of sync with each other
     for(uint8_t i = 0; i < this->ledsNumber; i++) {
-      leds[i] = CHSV(this->hue + inoise8(this->x + i * 50, this->y, this->z), 255, inoise8(this->y + i * 50, this->x, this->z));
+      switch(this->subMode % NEZUMIKUN_LED_MANAGER_PALLETES_NUMBER) {
+        case 0:
+          leds[i] = ColorFromPalette((CRGBPalette16) xmas_gp, inoise8(i * 40, this->y));
+          break;
+        case 1:
+          leds[i] = ColorFromPalette(HeatColors_p, inoise8(i * 40, this->y));
+          break;
+#ifndef BOARD_ATTINY85
+        case 2:
+          leds[i] = ColorFromPalette(PartyColors_p, inoise8(i * 40, this->y));
+          break;
+        case 3:
+          leds[i] = ColorFromPalette(RainbowColors_p, inoise8(i * 40, this->y));
+          break;
+        case 4:
+          leds[i] = ColorFromPalette(LavaColors_p, inoise8(i * 40, this->y));
+          break;
+        case 5:
+          leds[i] = ColorFromPalette(CloudColors_p, inoise8(i * 40, this->y));
+          break;
+        case 6:
+          leds[i] = ColorFromPalette((CRGBPalette16) aurora_gp, inoise8(i * 40, this->y));
+          break;
+        case 7:
+          leds[i] = CHSV(this->hue + inoise8(this->x + i * 50, this->y), 255, inoise8(this->y + i * 50, this->x));
+          break;
+#endif
+      }
     }
     this->x++;
-    this->y--;
-    this->z++;
+    this->y += 10;
   }
 
 
-  void LedManager::nextPattern(bool autoChange) {
+  void LedManager::nextPattern() {
     if (this->demoMode) {
       if (!this->isShowAllModesInDemo) {
         this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
@@ -97,10 +144,12 @@ namespace Nezumikun {
         }
       } else {
         if ((random8() & 1) == 1) {
+          this->subMode = random8();
           this->currentPatternNumber = random8(NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER);
         }
       }
     } else {
+      this->subMode = random8();
       this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
     }
   }
@@ -114,13 +163,14 @@ namespace Nezumikun {
       // Call the current pattern function once, updating the 'leds' array
       switch(this->currentPatternNumber) {
         case 0: this->effectRainbow(); break;
-        case 1: this->effectRainbowWithGlitter(); break;
-        case 2: this->effectConfetti(); break;
-        case 3: this->effectSinelon(); break;
-        case 4: this->effectJuggle(); break;
-        case 5: this->effectBpm(); break;
-        case 6: this->effectPerlinNoise(); break;
+        case 1: this->effectConfetti(); break;
+        case 2: this->effectSinelon(); break;
+        case 3: this->effectJuggle(); break;
+        case 4: this->effectBpm(); break;
+        case 5: this->effectPerlinNoise(); break;
       }
+      // this->subMode = 0;
+      // this->effectPerlinNoise();
 
       // send the 'leds' array out to the actual LED strip
       FastLED.show();
@@ -128,7 +178,7 @@ namespace Nezumikun {
     }
     EVERY_N_MILLISECONDS(20) { this->hue++; } // slowly cycle the "base color" through the rainbow
     if (this->demoMode) {
-      EVERY_N_SECONDS(20) { this->nextPattern(true); } // change patterns periodically
+      EVERY_N_SECONDS(20) { this->nextPattern(); } // change patterns periodically
     }
   }
 

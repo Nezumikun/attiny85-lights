@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include "FastLED.h"
 
-#define NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER 7
+#define NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER 6
 
 namespace Nezumikun {
   typedef void (*ptrAllModesCallBack)();
@@ -19,9 +19,8 @@ namespace Nezumikun {
       uint8_t hue = 0; // rotating "base color" used by many of the patterns
       uint16_t x = 0;
       uint16_t y = 0;
-      uint16_t z = 0;
+      uint8_t subMode = 0;
       void effectRainbow();
-      void effectRainbowWithGlitter();
       void effectConfetti();
       void effectSinelon();
       void effectBpm();
@@ -35,7 +34,7 @@ namespace Nezumikun {
       void loop(unsigned long now);
       bool isDemoMode();
       void setDemoMode(bool demoMode);
-      void nextPattern(bool autoChange);
+      void nextPattern();
       void setAllModesCallback(ptrAllModesCallBack callback);
   };
 }

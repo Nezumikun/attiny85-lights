@@ -9,19 +9,20 @@ FASTLED_USING_NAMESPACE
 #define DATA_PIN    3
 #define NUM_LEDS    50
 #define BRIGHTNESS  255
+#define BUTTON_PIN 0
+#define GREENLED_PIN 4
 #else
 #define DATA_PIN    13
 #define NUM_LEDS    30
 #define BRIGHTNESS  100
+#define BUTTON_PIN  2
+#define GREENLED_PIN 3
 #endif
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
 #define FRAMES_PER_SECOND  50
-#define GREENLED_PIN 4
-
-#define BUTTON_PIN 0
 
 Nezumikun::LedManager ledManager(&leds[0], NUM_LEDS, FRAMES_PER_SECOND);
 Nezumikun::LED ledGreen(GREENLED_PIN);
@@ -67,7 +68,7 @@ void checkButtonPush(unsigned long now) {
     if (!hold) {
       ledManager.setDemoMode(false);
       ledGreen.off();
-      ledManager.nextPattern(false);
+      ledManager.nextPattern();
     }
     hold = false;
   }
@@ -76,9 +77,7 @@ void checkButtonPush(unsigned long now) {
 void loop()
 {
   unsigned long now = millis();
-  #ifndef BOARD_ARDUINO_NANO
   checkButtonPush(now);
-  #endif
   ledGreen.touch(now);
   ledManager.loop(now);
 }
