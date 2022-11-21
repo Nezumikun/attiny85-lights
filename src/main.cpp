@@ -35,7 +35,7 @@ void setup() {
 #ifdef BOARD_ARDUINO_NANO
   Serial.begin(115200);
   randomSeed(analogRead(0));
-  Serial.println("Begin");
+  NANO_PRINTLN("Begin");
 #endif
   pinMode(BUTTON_PIN, INPUT);
   delay(500); // delay for recovery
@@ -56,21 +56,29 @@ void checkButtonPush(unsigned long now) {
     buttonState = true;
     buttonTimer = now;
     hold = false;
+    NANO_PRINTLN("Button is pressed");
   }
   else if (temp && buttonState && delta > 1000) {
     ledManager.setDemoMode(true);
     ledGreen.on();
-    hold = true;
+    if (!hold) {
+      hold = true;
+      NANO_PRINTLN("Button is holded");
+    }
   }
   else if (!temp && buttonState && delta > 100) {
     buttonState = false;
     buttonTimer = now;
     if (!hold) {
+      if (!ledManager.isDemoMode()) {
+        ledManager.setDemoMode(false);
+        ledManager.nextEffect();
+      }
       ledManager.setDemoMode(false);
       ledGreen.off();
-      ledManager.nextPattern();
     }
     hold = false;
+    NANO_PRINTLN("Button is released");
   }
 }
 

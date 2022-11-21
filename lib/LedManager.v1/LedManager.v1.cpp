@@ -21,7 +21,8 @@ namespace Nezumikun {
   void LedManager::setDemoMode(bool demoMode) {
     this->demoMode = demoMode;
     if (demoMode) {
-      this->currentPatternNumber = 0;
+      this->currentEffectNumber = 0;
+      this->subMode = 0;
       this->isShowAllModesInDemo = false;
     }
   }
@@ -132,26 +133,36 @@ namespace Nezumikun {
   }
 
 
-  void LedManager::nextPattern() {
+  void LedManager::nextEffect() {
+    NANO_PRINT("Next Effect: ");
+    NANO_PRINT(this->currentEffectNumber);
+    NANO_PRINT(" -> ");
     if (this->demoMode) {
+      NANO_PRINT("[DEMO] ");
       if (!this->isShowAllModesInDemo) {
-        this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
-        if (this->currentPatternNumber == 0) {
+        NANO_PRINT("[SHOW ALL] ");
+        this->currentEffectNumber = (this->currentEffectNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+        NANO_PRINT(this->currentEffectNumber);
+        if (this->currentEffectNumber == 0) {
           this->isShowAllModesInDemo = true;
           if (this->callbackAllModes != NULL) {
             this->callbackAllModes();
           }
+          NANO_PRINT(" [SHOW ALL OFF]");
         }
       } else {
         if ((random8() & 1) == 1) {
           this->subMode = random8();
-          this->currentPatternNumber = random8(NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER);
+          this->currentEffectNumber = random8(NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER);
         }
+        NANO_PRINT(this->currentEffectNumber);
       }
     } else {
       this->subMode = random8();
-      this->currentPatternNumber = (this->currentPatternNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+      this->currentEffectNumber = (this->currentEffectNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
+      NANO_PRINT(this->currentEffectNumber);
     }
+    NANO_PRINTLN("");
   }
 
   void LedManager::setAllModesCallback(ptrAllModesCallBack callback) {
@@ -161,7 +172,7 @@ namespace Nezumikun {
   void LedManager::loop(unsigned long now) {
     if (now - this->prevTime >= this->timeInterval) {
       // Call the current pattern function once, updating the 'leds' array
-      switch(this->currentPatternNumber) {
+      switch(this->currentEffectNumber) {
         case 0: this->effectRainbow(); break;
         case 1: this->effectConfetti(); break;
         case 2: this->effectSinelon(); break;
@@ -178,7 +189,7 @@ namespace Nezumikun {
     }
     EVERY_N_MILLISECONDS(20) { this->hue++; } // slowly cycle the "base color" through the rainbow
     if (this->demoMode) {
-      EVERY_N_SECONDS(20) { this->nextPattern(); } // change patterns periodically
+      EVERY_N_SECONDS(20) { this->nextEffect(); } // change patterns periodically
     }
   }
 
