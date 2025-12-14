@@ -34,6 +34,7 @@ namespace Nezumikun {
       void effectBpm();
       void effectJuggle();
       void effectPerlinNoise();
+      void nextPalette();
       ptrAllModesCallBack callbackAllModes = NULL;
       bool isShowAllModesInDemo = false;
     public:

@@ -152,21 +152,41 @@ namespace Nezumikun {
         }
       } else {
         if ((random8() & 1) == 1) {
-          this->subMode = random8();
+          this->subMode = random8() % NEZUMIKUN_LED_MANAGER_PALLETES_NUMBER;
           this->currentEffectNumber = random8(NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER);
         }
         NANO_PRINT(this->currentEffectNumber);
+        if (this->currentEffectNumber == 5) {
+          NANO_PRINT(" (");          
+          NANO_PRINT(this->subMode);
+          NANO_PRINT(")");          
+        }
       }
     } else {
-      this->subMode = random8();
+      this->subMode = random8() % NEZUMIKUN_LED_MANAGER_PALLETES_NUMBER;
       this->currentEffectNumber = (this->currentEffectNumber + 1) % NEZUMIKUN_LED_MANAGER_EFFECTS_NUMBER;
       NANO_PRINT(this->currentEffectNumber);
+      if (this->currentEffectNumber == 5) {
+        NANO_PRINT(" (");          
+        NANO_PRINT(this->subMode);
+        NANO_PRINT(")");          
+      }
     }
     NANO_PRINTLN("");
   }
 
   void LedManager::setAllModesCallback(ptrAllModesCallBack callback) {
     this->callbackAllModes = callback;
+  }
+
+  void LedManager::nextPalette() {
+    uint8_t subMode = this->subMode;
+    this->subMode = random8() % NEZUMIKUN_LED_MANAGER_PALLETES_NUMBER;
+    if (this->subMode != subMode) {
+      NANO_PRINT("Set new palette  = ");          
+      NANO_PRINT(this->subMode);
+      NANO_PRINTLN("");          
+    }
   }
 
   void LedManager::loop(unsigned long now) {
@@ -188,8 +208,15 @@ namespace Nezumikun {
       this->prevTime = now;
     }
     EVERY_N_MILLISECONDS(20) { this->hue++; } // slowly cycle the "base color" through the rainbow
-    if (this->demoMode) {
-      EVERY_N_SECONDS(20) { this->nextEffect(); } // change patterns periodically
+    EVERY_N_SECONDS(20) { 
+      if (this->demoMode) {
+        this->nextEffect();
+      } // change patterns periodically
+      else {
+        if (this->currentEffectNumber == 5) {
+          this->nextPalette();
+        }
+      }
     }
   }
 

@@ -6,15 +6,15 @@
 FASTLED_USING_NAMESPACE
 
 #ifdef BOARD_ATTINY85
-#define DATA_PIN    3
+#define DATA_PIN    0
 #define NUM_LEDS    50
 #define BRIGHTNESS  255
-#define BUTTON_PIN 0
+#define BUTTON_PIN 3
 #define GREENLED_PIN 4
 #else
 #define DATA_PIN    13
-#define NUM_LEDS    30
-#define BRIGHTNESS  100
+#define NUM_LEDS    50
+#define BRIGHTNESS  255
 #define BUTTON_PIN  2
 #define GREENLED_PIN 3
 #endif
@@ -38,7 +38,9 @@ void setup() {
   NANO_PRINTLN("Begin");
 #endif
   pinMode(BUTTON_PIN, INPUT);
+#ifdef BOARD_ATTINY85
   delay(500); // delay for recovery
+#endif
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(BRIGHTNESS);
   ledManager.begin();
